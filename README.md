@@ -21,9 +21,9 @@ Programa para eliminar el fondo de una imagen y guardarlo en formato .png, se gu
    cd <NOMBRE_DE_TU_CARPETA>
 
 3. Instalar las dependencias necesarias, utiliza este comando en la terminal de tu editor de codigo
-   ```python
+   ```bash
    pip install flet rembg pillow
 
 4. Ejecuta la aplicacion desde la terminal de tu editor de codigo
-   ```python
+   ```bash
    python main.py
