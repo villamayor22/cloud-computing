@@ -6,65 +6,84 @@ import os
 async def main(page: ft.Page):
     page.title = "BgRemover - Quitar Fondo de Imágenes"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.vertical_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = "adaptive"
+    page.theme_mode = ft.ThemeMode.LIGHT
+    page.bgcolor = ft.Colors.WHITE
+    page.padding = 20  # Un poco de margen para que no quede pegado a los bordes
 
-    titulo = ft.Text("Quitar Fondo a Imágenes", style=ft.TextThemeStyle.HEADLINE_LARGE, weight=ft.FontWeight.BOLD)
-    status_text = ft.Text("Selecciona una imagen para empezar...", color=ft.Colors.GREY_600)
-    
-    img_original = ft.Image(src="", width=250, height=250, fit=ft.BoxFit.CONTAIN, visible=False)
-    img_procesada = ft.Image(src="", width=250, height=250, fit=ft.BoxFit.CONTAIN, visible=False)
-    
-    # Guardaremos la ruta de la imagen procesada de manera global en la sesión
-    path_procesada = ft.Ref[str]()
+    # 1. FIX: Se crea el FilePicker una sola vez fuera del handler.
+    # Crearlo dentro del clic causa un TimeoutException en modo web.
+    file_picker = ft.FilePicker()
 
     async def on_file_click(e):
-        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg"])
-        if files:
-            input_path = files[0].path
-            status_text.value = "Procesando imagen... Por favor, espera."
-            page.update()
+        # Deshabilitar el botón para evitar clics múltiples mientras se procesa
+        btn_cargar.disabled = True
+        page.update()
+        
+        try:
+            # 2. FIX: Se usa pick_files() en lugar de pick_files_async() 
+            # (en Flet actual el método ya es asíncrono por defecto).
+            files = await file_picker.pick_files(
+                allow_multiple=False, 
+                allowed_extensions=["png", "jpg", "jpeg"]
+            )
             
-            try:
-                # Mostrar la original
-                img_original.src = input_path
-                img_original.visible = True
+            if files:
+                input_path = files[0].path
                 
-                # Procesar remoción de fondo
-                output_path = os.path.join(os.path.dirname(input_path), "temp_nobg.png")
+                if not input_path:
+                    print("Error: La ruta del archivo no está disponible.")
+                    return
+
+                # Guardar el archivo en el mismo directorio que el original
+                output_path = os.path.join(os.path.dirname(input_path), "imagen_sin_fondo.png")
+                
                 input_image = Image.open(input_path)
                 output_image = remove(input_image)
                 output_image.save(output_path)
                 
-                # Guardar ruta del archivo temporal
-                path_procesada.current = output_path
+                print(f"¡Fondo removido con éxito! Imagen guardada en: {output_path}")
                 
-                # Mostrar la procesada
-                img_procesada.src = output_path
-                img_procesada.visible = True
-                status_text.value = "¡Fondo removido con éxito!"
-            except Exception as ex:
-                status_text.value = f"Error al procesar: {str(ex)}"
-                status_text.color = ft.Colors.RED_400
-                
+        except Exception as ex:
+            print(f"Error al procesar la imagen: {str(ex)}")
+        finally:
+            # Volver a habilitar el botón al terminar (éxito o error)
+            btn_cargar.disabled = False
             page.update()
 
-    btn_cargar = ft.Button(
+    # 3. FIX: Se cambia 'style' por 'theme_style' para usar correctamente el enum
+    titulo = ft.Text(
+        "Selecciona la imagen para quitar el fondo", 
+        theme_style=ft.TextThemeStyle.HEADLINE_LARGE, 
+        weight=ft.FontWeight.BOLD,
+        text_align=ft.TextAlign.CENTER
+    )
+
+    btn_cargar = ft.ElevatedButton(
         "Seleccionar Imagen",
-        icon=ft.Icons.IMAGE,
+        icon=ft.Icons.UPLOAD_FILE,
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.BLUE_600,
+            color=ft.Colors.WHITE,
+            padding=20,
+            shape=ft.RoundedRectangleBorder(radius=10)
+        ),
         on_click=on_file_click
     )
 
+    # Interfaz simplificada: solo título y botón
     page.add(
-        titulo,
-        ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-        btn_cargar,
-        status_text,
-        ft.Row([
-            ft.Column([ft.Text("Original"), img_original], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            ft.VerticalDivider(width=20),
-            ft.Column([ft.Text("Sin Fondo"), img_procesada], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        ], alignment=ft.MainAxisAlignment.CENTER)
+        ft.Column(
+            [
+                titulo,
+                ft.Divider(height=30, color=ft.Colors.TRANSPARENT),
+                btn_cargar
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=0
+        )
     )
 
 if __name__ == "__main__":
-    ft.run(main)
+    ft.app(main)
