@@ -3,6 +3,8 @@ from rembg import remove
 from PIL import Image
 import os
 import asyncio
+import subprocess
+import platform
 
 async def main(page: ft.Page):
     page.title = "BgRemover - Quitar Fondo de Imágenes"
@@ -14,13 +16,50 @@ async def main(page: ft.Page):
     page.padding = 20
 
     file_picker = ft.FilePicker()
+    
+    # Variable para almacenar la ruta del archivo procesado
+    processed_file_path = None
 
     # Componentes de progreso
     progress_bar = ft.ProgressBar(width=300, color=ft.Colors.BLUE_600, bgcolor=ft.Colors.GREY_200, visible=False)
     progress_text = ft.Text("", size=14, color=ft.Colors.BLUE_600, visible=False)
     success_icon = ft.Icon(ft.Icons.CHECK_CIRCLE, color=ft.Colors.GREEN_600, size=48, visible=False)
     success_text = ft.Text("¡Listo!", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_600, visible=False)
-    success_text_2 = ft.Text("Guardado en la misma carpeta que contiene tu imagen", size=12, color=ft.Colors.GREEN_600, visible=False)
+
+    # Botón de descarga (nueva funcionalidad)
+    btn_descargar = ft.ElevatedButton(
+        "Abrir Carpeta de Imagen",
+        icon=ft.Icons.FOLDER_OPEN,
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.GREEN_600,
+            color=ft.Colors.WHITE,
+            padding=15,
+            shape=ft.RoundedRectangleBorder(radius=10)
+        ),
+        on_click=lambda e: abrir_carpeta(),
+        visible=False
+    )
+
+    def abrir_carpeta():
+        """Abre la carpeta donde se guardó la imagen procesada"""
+        if processed_file_path and os.path.exists(processed_file_path):
+            folder_path = os.path.dirname(processed_file_path)
+            try:
+                if platform.system() == "Windows":
+                    os.startfile(folder_path)
+                elif platform.system() == "Darwin":  # macOS
+                    subprocess.call(["open", folder_path])
+                else:  # Linux
+                    subprocess.call(["xdg-open", folder_path])
+                print(f"Carpeta abierta: {folder_path}")
+            except Exception as ex:
+                print(f"Error al abrir la carpeta: {ex}")
+                # Mostrar diálogo con la ruta si no se puede abrir
+                page.open(ft.AlertDialog(
+                    title=ft.Text("Ubicación del archivo"),
+                    content=ft.Text(f"El archivo se guardó en:\n{processed_file_path}"),
+                    actions=[ft.TextButton("Cerrar", on_click=lambda e: page.close())]
+                ))
 
     async def simulate_progress():
         """Simula el progreso mientras se procesa la imagen"""
@@ -31,11 +70,14 @@ async def main(page: ft.Page):
             await asyncio.sleep(0.1)
 
     async def on_file_click(e):
+        nonlocal processed_file_path
+        
         btn_cargar.disabled = True
         progress_bar.visible = True
         progress_text.visible = True
         success_icon.visible = False
         success_text.visible = False
+        btn_descargar.visible = False
         progress_bar.value = 0
         page.update()
         
@@ -62,6 +104,9 @@ async def main(page: ft.Page):
                 output_image = remove(input_image)
                 output_image.save(output_path)
                 
+                # Guardar la ruta del archivo procesado
+                processed_file_path = output_path
+                
                 # Esperar a que termine la simulación de progreso
                 await progress_task
                 
@@ -76,7 +121,7 @@ async def main(page: ft.Page):
                 progress_text.visible = False
                 success_icon.visible = True
                 success_text.visible = True
-                success_text_2.visible = True
+                btn_descargar.visible = True  # Mostrar botón de descarga
                 
                 print(f"¡Fondo removido con éxito! Imagen guardada en: {output_path}")
                 
@@ -118,7 +163,9 @@ async def main(page: ft.Page):
                 progress_text,
                 ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
                 success_icon,
-                success_text
+                success_text,
+                ft.Divider(height=15, color=ft.Colors.TRANSPARENT),
+                btn_descargar  # Nuevo botón agregado
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0
