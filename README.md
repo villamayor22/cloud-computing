@@ -5,7 +5,7 @@ Trabajo de la materia de Cloud Computing - UNINORTE
 José Villamayor
 
 ## Profesor
-Ing. Julio Cesar Saucedo
+Ing. Julio César Saucedo
 
 ## Link del tablero de Trello
 https://trello.com/invite/b/6a396a2c368524d89e6c9775/ATTI96c5f1c021b3aa5f026ede194b174b0a91E24606/coud-computing
