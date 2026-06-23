@@ -32,6 +32,7 @@ Una vez procesada la imagen, el archivo resultante se guarda automáticamente en
 1. Se integró REMBG para el procesamiento y la remoción del fondo de la imagen para convertirlo en .png
 2. Se mejoró el estilo de la interfaz, quitando un rectangulo gris que obstruia una parte de la vista
 3. Se agregó la barra de progreso y el indicativo de proceso exitoso en la interfaz
+4. Se agregó el foton para mostrar la ubicacion del archivo .png
 
 ## Requisitos para ejecutar el codigo localmente
 1. Tener conexión a internet
